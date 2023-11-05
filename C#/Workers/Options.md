@@ -1,6 +1,7 @@
 # Содержание
 1. [Example№1](#Part1)
 2. [Example№2](#Part2)
+3. [Example№3](#Part3)
 
 
 ## Example№1 <a name="Par1"></a>
@@ -178,3 +179,67 @@ var myService = serviceProvider.GetRequiredService<MyService>();
 
 Пожалуйста, учтите, что код для настройки DI может различаться в зависимости от выбранного вами фреймворка или библиотеки DI. Вышеуказанные примеры относятся к стандартным шаблонам ASP.NET Core и .NET Core.
 
+## Example №3 <a name="Par3"></a>
+Конечно! Вот пример использования `IOptions` в простом консольном приложении без контекста ASP.NET:
+
+1. Сначала, установите пакет `Microsoft.Extensions.Configuration` из NuGet.
+2. Создайте файл конфигурации `appsettings.json` в своем проекте со следующим содержимым:
+
+```json
+{
+  "MyOptions": {
+    "Option1": "Value1",
+    "Option2": "Value2"
+  }
+}
+```
+
+3. Создайте класс `MyOptions`:
+
+```csharp
+public class MyOptions
+{
+    public string Option1 { get; set; }
+    public string Option2 { get; set; }
+}
+```
+
+4. В точке входа вашего приложения (например, в методе `Main`) настройте DI и использование опций:
+
+```csharp
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Options;
+using System;
+
+class Program
+{
+    static void Main(string[] args)
+    {
+        var configuration = new ConfigurationBuilder()
+            .AddJsonFile("appsettings.json")
+            .Build();
+
+        var services = new ServiceCollection();
+
+        // Регистрируем секцию конфигурации MyOptions
+        services.Configure<MyOptions>(configuration.GetSection("MyOptions"));
+
+        var serviceProvider = services.BuildServiceProvider();
+
+        // Получаем экземпляр MyOptions через провайдер
+        var myOptions = serviceProvider.GetRequiredService<IOptions<MyOptions>>().Value;
+
+        Console.WriteLine($"Option 1: {myOptions.Option1}");
+        Console.WriteLine($"Option 2: {myOptions.Option2}");
+    }
+}
+```
+
+В этом примере мы используем `ConfigurationBuilder` для загрузки конфигурации из файла `appsettings.json`. Затем мы регистрируем секцию конфигурации `MyOptions` с помощью `services.Configure<MyOptions>(configuration.GetSection("MyOptions"))`. Это позволяет DI контейнеру знать, как создать экземпляр `MyOptions` и применить к нему значения из конфигурации.
+
+Затем мы получаем экземпляр `MyOptions` через провайдер служб `IOptions<MyOptions>`. С помощью `myOptions.Option1` и `myOptions.Option2` мы можем получить значения опций и вывести их в консоль.
+
+Обратите внимание, что `IOptions<MyOptions>` является оберткой над экземпляром `MyOptions`, поэтому мы используем `Value` для доступа к самому объекту `MyOptions`.
+
+Это простой пример, демонстрирующий использование `IOptions` в консольном приложении без контекста ASP.NET. Вы можете расширить его и настроить DI для других служб, если вам понадобится.
