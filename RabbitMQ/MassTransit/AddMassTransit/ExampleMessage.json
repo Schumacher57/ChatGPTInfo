@@ -1,0 +1,30 @@
+{
+    "messageId": "14190000-eb29-0016-1ce2-08dc04a443c5",
+    "requestId": null,
+    "correlationId": null,
+    "conversationId": "14190000-eb29-0016-09ce-08dc04a443d7",
+    "initiatorId": null,
+    "sourceAddress": "rabbitmq://localhost/DESKTOPA2Q2U2P_RabbitMQMassTransit_bus_nocoyy8mfrybc71ibdqyjjnnyg?temporary=true",
+    "destinationAddress": "rabbitmq://localhost/RabbitMQTest:Message?temporary=true",
+    "responseAddress": null,
+    "faultAddress": null,
+    "messageType": [
+        "urn:message:RabbitMQTest:Message"
+    ],
+    "message": {
+        "text": "Hi Alesha!!!"
+    },
+    "expirationTime": null,
+    "sentTime": "2023-12-24T17:17:53.7906914Z",
+    "headers": {},
+    "host": {
+        "machineName": "DESKTOP-A2Q2U2P",
+        "processName": "RabbitMQMassTransit",
+        "processId": 6420,
+        "assembly": "RabbitMQMassTransit",
+        "assemblyVersion": "1.0.0.0",
+        "frameworkVersion": "7.0.12",
+        "massTransitVersion": "8.1.3.0",
+        "operatingSystemVersion": "Microsoft Windows NT 10.0.19045.0"
+    }
+}
