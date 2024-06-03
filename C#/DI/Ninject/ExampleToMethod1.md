@@ -1,3 +1,100 @@
+Конечно, давай рассмотрим примеры по каждому из пунктов:
+
+### Пример 1: Внедрение зависимостей (DI)
+```csharp
+using Ninject;
+
+public interface IService
+{
+    void Operation();
+}
+
+public class MyService : IService
+{
+    public void Operation()
+    {
+        Console.WriteLine("Operation in MyService");
+    }
+}
+
+public class Client
+{
+    private readonly IService _service;
+
+    public Client(IService service)
+    {
+        _service = service;
+    }
+
+    public void DoWork()
+    {
+        _service.Operation();
+    }
+}
+
+class Program
+{
+    static void Main()
+    {
+        var kernel = new StandardKernel();
+        kernel.Bind<IService>().To<MyService>();
+
+        var client = kernel.Get<Client>();
+        client.DoWork();
+    }
+}
+```
+
+### Пример 2: Привязки (Bindings)
+```csharp
+using Ninject;
+using Ninject.Modules;
+
+public interface IRepository
+{
+    void Save(string data);
+}
+
+public class DatabaseRepository : IRepository
+{
+    public void Save(string data)
+    {
+        Console.WriteLine($"Saving data to database: {data}");
+    }
+}
+
+public class LoggingRepository : IRepository
+{
+    public void Save(string data)
+    {
+        Console.WriteLine($"Logging data: {data}");
+    }
+}
+
+public class RepositoryModule : NinjectModule
+{
+    public override void Load()
+    {
+        Bind<IRepository>().To<DatabaseRepository>();
+        //Bind<IRepository>().To<LoggingRepository>(); // Uncomment this line to switch implementation
+    }
+}
+
+class Program
+{
+    static void Main()
+    {
+        var kernel = new StandardKernel(new RepositoryModule());
+
+        var repository = kernel.Get<IRepository>();
+        repository.Save("Some data to save or log");
+    }
+}
+```
+
+Эти примеры демонстрируют основные концепции и возможности Ninject, такие как внедрение зависимостей и привязки. Вы можете экспериментировать, меняя привязки и добавляя новые зависимости с помощью Ninject для улучшения гибкости и расширяемости вашего приложения. 🤖💻🔧
+
+
 Конечно, вот пример использования `ToMethod` в Ninject с комментариями:
 
 ```csharp
