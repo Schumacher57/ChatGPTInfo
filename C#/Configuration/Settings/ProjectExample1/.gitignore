@@ -1,0 +1,33 @@
+# Ignore Visual Studio files
+.vs/
+*.suo
+*.user
+*.sln.docstates
+*.bak
+
+# Ignore build output
+bin/
+obj/
+
+# Ignore NuGet packages folder
+packages/
+
+# Ignore .NET Core and Visual Studio generated files
+*.cache
+*.log
+*.vscode
+
+# Ignore Resharper files
+_ReSharper*/
+*.resharper.user
+
+# Ignore build artifacts
+[Dd]ebug/
+[Rr]elease/
+x64/
+x86/
+[Aa][Rr][Mm]/
+[Aa][Rr][Mm]64/
+bld/
+[Bb]in/
+[Oo]bj/
