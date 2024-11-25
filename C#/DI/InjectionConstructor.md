@@ -85,7 +85,7 @@ class Program
 
 ---
 
-### Examople Microsoft.Extensions.DependencyInjection ###
+### Example Microsoft.Extensions.DependencyInjection ###
 Конечно! Вот пример регистрации зависимости через конструктор с использованием `Microsoft.Extensions.DependencyInjection`:
 
 ```csharp
