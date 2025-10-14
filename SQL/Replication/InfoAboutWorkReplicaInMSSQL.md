@@ -155,7 +155,173 @@ EXEC sp_start_job @job_name = 'S-T-CRM31-SQL01-CrmExtensions-CRMTODWHACRM2015-16
 6. Проверить таблицы в подписчике (`DWH_aCRM_2015`).
 
 ---
+---
 
-Если хочешь, могу нарисовать **схему с потоками данных и джобами**, чтобы визуально видно было как Snapshot → Distribution → Subscriber.
+Да, примерно так, но с уточнениями. Разложим по пунктам:
 
-Хочешь, чтобы я её сделал?
+---
+
+## 1. Агенты и публикации
+
+Для каждой **публикации** (`Publication`) создаются свои агенты:
+
+| Агент                  | Что делает                                                                                       | Создаётся ли отдельный для каждой публикации? |
+| ---------------------- | ------------------------------------------------------------------------------------------------ | --------------------------------------------- |
+| **Snapshot Agent**     | Создаёт снимок всех таблиц и объектов публикации                                                 | Да, отдельный на каждую публикацию            |
+| **Log Reader Agent**   | Берёт транзакции из журнала и готовит их для Distribution (только для транзакционной репликации) | Да, отдельный на каждую публикацию            |
+| **Distribution Agent** | Переносит данные из Distribution на Subscriber                                                   | Да, отдельный на каждую публикацию + подписку |
+
+---
+
+## 2. Subscriber и Distribution
+
+* На каждый **Subscriber** создаётся свой **Distribution Agent**, даже если одна и та же публикация доставляется в несколько подписчиков.
+* Если подписчиков несколько, есть несколько агентов Distribution, но **Snapshot Agent остаётся один** (для одной публикации).
+* **Важно:** Snapshot Agent генерирует данные один раз для публикации, а потом каждый Distribution Agent берёт их для своего подписчика.
+
+---
+
+## 3. Влияние количества баз и таблиц
+
+* **Количество таблиц в публикации**: один Snapshot Agent копирует все таблицы публикации за один запуск.
+* **Количество баз публикации**: для каждой базы публикации создаётся отдельная публикация → отдельный Snapshot Agent и свои Distribution/Log Reader агенты.
+
+То есть:
+
+* Публикация = связка **Publisher DB + набор таблиц**
+* На каждую публикацию свои агенты
+* Для одного подписчика на одну публикацию — один Distribution Agent
+* Для нескольких подписчиков одной публикации — несколько Distribution Agents, но один Snapshot Agent
+
+---
+
+Пример:
+
+```
+Publisher DB: CrmExtensions
+Publication1 (таблицы A,B,C) → Subscriber1
+Publication2 (таблицы D,E)  → Subscriber1
+Publication1 → Subscriber2
+```
+
+Агенты будут такие:
+
+| Публикация   | Snapshot Agent | Distribution Agent            |
+| ------------ | -------------- | ----------------------------- |
+| Publication1 | 1              | 2 (Subscriber1 + Subscriber2) |
+| Publication2 | 1              | 1 (Subscriber1)               |
+
+---
+---
+Да, через запросы можно полностью обойтись без GUI. Разложим по шагам и по таблицам/процедурам.
+
+---
+
+## 1. Snapshot Agent
+
+### Таблица:
+
+`distribution.dbo.MSsnapshot_agents`
+
+Пример запроса для публикации:
+
+```sql
+USE distribution;
+SELECT name AS snapshot_agent_name,
+       publisher_db,
+       publication,
+       publisher_id,
+       agent_id
+FROM dbo.MSsnapshot_agents
+WHERE publication = 'CRMTODWHACRM2015';
+```
+
+* `name` → имя агента, совпадает с именем джобы в SQL Server Agent
+* `agent_id` → используется для истории и журналов
+
+### История работы агента:
+
+`distribution.dbo.MSsnapshot_history`
+
+```sql
+USE distribution;
+SELECT TOP 100 *
+FROM dbo.MSsnapshot_history
+WHERE agent_id = 1612
+ORDER BY time DESC;
+```
+
+* `runstatus` = статус выполнения (0=запланирован, 1=успешно, 3=в процессе, 5=ошибка)
+* `comments` → текст логов (важно при ошибках)
+
+---
+
+## 2. Log Reader Agent
+
+Для транзакционной репликации:
+
+```sql
+USE distribution;
+SELECT name AS logreader_agent_name,
+       publication,
+       publisher_db,
+       agent_id
+FROM dbo.MSlogreader_agents
+WHERE publication = 'CRMTODWHACRM2015';
+```
+
+* `agent_id` → аналогично для истории
+* История: `distribution.dbo.MSlogreader_history`
+
+---
+
+## 3. Distribution Agent (для подписчика)
+
+```sql
+USE distribution;
+SELECT name AS dist_agent_name,
+       publisher_db,
+       publication,
+       subscriber_server,
+       subscriber_db,
+       agent_id
+FROM dbo.MSdistribution_agents
+WHERE publication = 'CRMTODWHACRM2015';
+```
+
+* Каждый подписчик получает свой Distribution Agent
+
+История работы:
+`distribution.dbo.MSdistribution_history`
+
+---
+
+## 4. Джобы SQL Server Agent
+
+Все агенты создаются как **SQL Server Agent Job**. Таблицы находятся в `msdb`:
+
+```sql
+USE msdb;
+-- По имени агента
+EXEC sp_help_job @job_name = 'S-T-CRM31-SQL01-CrmExtensions-CRMTODWHACRM2015-1612';
+
+-- По статусу выполнения
+EXEC sp_help_job @execution_status = 4; -- 4 = выполняется
+```
+
+* `current_execution_status` → 1=выполняется, 4=не выполняется, 5=завершено с ошибкой
+* `last_run_outcome` → 0=не запускался, 1=успех, 3=ошибка
+
+---
+
+## 5. Связь между публикацией и джобой
+
+* `distribution.dbo.MSsnapshot_agents.name` = имя джобы в `msdb.dbo.sysjobs.name`
+* То же для Log Reader и Distribution Agents
+
+---
+
+
+
+
+
